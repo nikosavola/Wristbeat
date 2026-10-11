@@ -1,0 +1,51 @@
+<resources>
+  <string name="app_name">Wristbeat</string>
+
+  <!-- Every state the app draws is an icon, with a number beside it where there is a number to show,
+       so nothing visible here is a word that needs translating. What is left is what a screen reader
+       has to say about those icons, and the errors, which have to be readable to be actionable. -->
+
+  <string name="broadcast_start_description">Start broadcasting</string>
+  <string name="broadcast_stop_description">Stop broadcasting</string>
+
+  <string name="heart_rate_idle_description">Not broadcasting</string>
+  <string name="heart_rate_absent_description">Waiting for a heart rate reading</string>
+  <plurals name="heart_rate_description">
+    <item quantity="one">Heart rate %1$d beat per minute</item>
+    <item quantity="other">Heart rate %1$d beats per minute</item>
+  </plurals>
+
+  <string name="receivers_none_description">No receivers connected</string>
+  <string name="receivers_connected_description">Receivers connected: %1$d</string>
+  <string name="show_devices">Show connected devices</string>
+
+  <string name="devices_header_description">Connected devices</string>
+  <!-- One sentence for the empty page's single rune: it names the page the way the header does when
+       there is a header, and then says what to do. The instructions are here rather than on screen
+       because no glyph says "pair this watch", and a sentence would be the only body text in the
+       app, but a screen reader still has to be told what to do next. -->
+  <string name="devices_empty_description">Connected devices. No receiver has connected yet. Pair this watch as a heart rate sensor from the device you want to read it.</string>
+
+  <string name="rejection_bluetooth_off">Turn Bluetooth on</string>
+  <string name="rejection_peripheral_unavailable">This watch can\'t broadcast</string>
+  <string name="rejection_advertise_failed">Couldn\'t start broadcasting</string>
+  <string name="rejection_missing_permission">Allow Bluetooth and heart rate in Settings</string>
+  <string name="rejection_no_heart_rate_sensor">No heart rate sensor</string>
+
+  <string name="notification_channel_name">Broadcasting</string>
+  <string name="notification_title">Heart rate broadcasting</string>
+  <string name="notification_content_description">Heart rate broadcasting, tap to open the app</string>
+  <string name="action_stop">Stop</string>
+
+  <!-- What the ongoing notification says under its title, so a glance at the watch face tells the
+       wearer the session is alive rather than merely still there. -->
+  <string name="notification_waiting">No reading yet</string>
+  <string name="notification_reading">%1$s bpm</string>
+  <plurals name="notification_receivers">
+    <item quantity="one">%1$d receiver</item>
+    <item quantity="other">%1$d receivers</item>
+  </plurals>
+
+  <!-- Shown to the user in the agent settings that list what this app offers an AI assistant. -->
+  <string name="app_function_display_description">Shares this watch\&#8217;s heart rate over Bluetooth for gym equipment and bike computers to read.</string>
+</resources>

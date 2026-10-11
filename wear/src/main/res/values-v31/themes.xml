@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- The startup splash. The icon is the launcher icon itself, which is what the quality
+       guidelines ask for, so the two can never drift apart. -->
+  <style name="Theme.Wristbeat" parent="@android:style/Theme.DeviceDefault">
+    <item name="android:windowBackground">@android:color/black</item>
+    <item name="android:windowSplashScreenBackground">@android:color/black</item>
+    <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+  </style>
+</resources>

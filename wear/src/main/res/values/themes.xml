@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Black because a Wear app is asked to be: it is what an OLED watch wants, and it covers the
+       window between the process starting and Compose drawing its first frame. -->
+  <style name="Theme.Wristbeat" parent="@android:style/Theme.DeviceDefault">
+    <item name="android:windowBackground">@android:color/black</item>
+  </style>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@color/ic_launcher_background" />
+  <foreground android:drawable="@drawable/ic_launcher_foreground" />
+  <!-- Wear OS tints themed icons from this, so it has to be a solid silhouette. -->
+  <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>
