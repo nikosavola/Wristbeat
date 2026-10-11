@@ -1,0 +1,33 @@
+# Gradle files
+.gradle/
+build/
+# Kotlin 2.x build session files, empty between builds.
+.kotlin/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Log/OS Files
+*.log
+.DS_Store
+
+# Android Studio generated files and folders
+captures/
+.externalNativeBuild/
+.cxx/
+*.aab
+*.apk
+output-metadata.json
+
+# IntelliJ
+*.iml
+.idea/
+
+# Keystore files and the signing config that points at them
+*.jks
+*.keystore
+key.properties
+keystore.properties
+
+# Android Profiling
+*.hprof

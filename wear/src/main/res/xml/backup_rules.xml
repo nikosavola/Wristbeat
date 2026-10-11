@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The pre-Android-12 equivalent of data_extraction_rules.xml, same reasoning: the app persists
+     nothing, so nothing is backed up. Both files are needed because androidx's fullBackupContent
+     applies below API 31 and dataExtractionRules at and above it. -->
+<full-backup-content>
+  <exclude domain="root" />
+  <exclude domain="file" />
+  <exclude domain="database" />
+  <exclude domain="sharedpref" />
+  <exclude domain="external" />
+</full-backup-content>

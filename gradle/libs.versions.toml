@@ -1,0 +1,53 @@
+[versions]
+agp = "9.4.0"
+kotlin = "2.4.0"
+wear-compose = "1.6.2"
+wear-ongoing = "1.1.0"
+androidx-core-ktx = "1.17.0"
+androidx-lifecycle-runtime-ktx = "2.9.3"
+androidx-activity-compose = "1.10.1"
+coroutines = "1.9.0"
+junit = "4.13.2"
+# The UI test artifacts ship with the library under test, so this tracks the androidx.compose.ui
+# version that the Wear Compose libraries resolve to (1.9.0) rather than being picked freely.
+compose = "1.9.0"
+robolectric = "4.17"
+# KSP versions itself independently of Kotlin since 2.3, so this is not a Kotlin version prefix.
+ksp = "2.3.12"
+appfunctions = "1.0.0-alpha13"
+
+[libraries]
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidx-lifecycle-runtime-ktx" }
+# compose-ui 1.9.0 dropped the deprecated androidx.compose.ui.platform.LocalLifecycleOwner alias,
+# so collectAsStateWithLifecycle needs this for its own LocalLifecycleOwner.
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle-runtime-ktx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
+
+wear-compose-material3 = { group = "androidx.wear.compose", name = "compose-material3", version.ref = "wear-compose" }
+wear-compose-foundation = { group = "androidx.wear.compose", name = "compose-foundation", version.ref = "wear-compose" }
+# Puts the session on the watch face as an ongoing activity chip, which is what the Wear app quality
+# guidelines ask of anything long-running.
+wear-ongoing = { group = "androidx.wear", name = "wear-ongoing", version.ref = "wear-ongoing" }
+
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Lets Android's AI agents start and stop a session. Still alpha, and its stability is Google's
+# problem rather than a reason to leave the app unable to be driven by one.
+androidx-appfunctions = { group = "androidx.appfunctions", name = "appfunctions", version.ref = "appfunctions" }
+androidx-appfunctions-compiler = { group = "androidx.appfunctions", name = "appfunctions-compiler", version.ref = "appfunctions" }
+
+# Runs the Android framework and the app's own resources on the JVM, so the Wear layouts can be
+# measured without a watch.
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4", version.ref = "compose" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest", version.ref = "compose" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
