@@ -1,0 +1,60 @@
+name: CI
+
+# The gate that is run locally and nothing more: the JVM test suite, lint, and the two artifacts the
+# stores take (the unsigned APK F-Droid builds from, and the bundle Play takes). No device, because
+# the suite is written to need none.
+#
+# A private repository's minutes are metered, so it is one job on the cheapest runner, a
+# documentation-only change is excluded, a superseded run is cancelled, and the Gradle tasks are
+# one invocation so the daemon and the configuration cache are paid for once.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "fastlane/**"
+      - ".github/**"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "fastlane/**"
+      - ".github/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Test, lint and build
+    # Pinned rather than ubuntu-latest, which starts migrating to Ubuntu 26 on 19 October 2026 and
+    # would change the toolchain under a workflow nobody edited.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09d # v5.1.0
+        with:
+          # Nothing here writes to the repository, so no later step needs the token left behind.
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      # compileSdk is 37, which a runner image may not have installed yet. AGP fetches a missing
+      # platform itself and the images pre-accept the licences for it, so a bump costs a slow run
+      # rather than a broken one.
+      - name: Test, lint and build
+        run: ./gradlew :wear:testDebugUnitTest :wear:lintDebug :wear:assembleRelease :wear:bundleRelease
