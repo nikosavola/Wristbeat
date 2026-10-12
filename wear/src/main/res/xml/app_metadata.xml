@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What an AI agent is told about this app before it is shown the functions themselves. -->
+<AppFunctionAppMetadata xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="Broadcasts this watch's own heart rate over Bluetooth LE as a standard heart rate sensor, so gym equipment, bike computers and apps can read it while the wearer exercises. Operational Patterns: - Check isBroadcasting before starting a session the wearer may already have running. - toggleBroadcasting flips the session, so call it once per request rather than twice. Constraints: - The wearer must have granted the Bluetooth and heart rate permissions; without them a session cannot start and the function reports false. - The watch is the sensor, so a session is only useful while the watch is being worn."
+    appfn:displayDescription="@string/app_function_display_description" />
