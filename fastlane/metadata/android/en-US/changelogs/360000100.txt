@@ -1,0 +1,5 @@
+First release.
+
+Press the play button to start broadcasting your heart rate as a standard Bluetooth heart rate
+sensor, and press it again to stop. The badge on the watch face and the notification both say what
+the session is doing, and the second page lists who is reading it.
