@@ -1,0 +1,39 @@
+Wristbeat turns a Wear OS watch into a standard Bluetooth heart rate sensor.
+
+Gym equipment, bike computers, rowing machines and phone apps that ask for a heart rate belt will
+find this watch instead, and read the pulse it is already showing.
+
+It is one button. Press it and the watch advertises the standard Bluetooth Heart Rate Service with
+your heart rate in it. Press it again to stop. Everything else tells you what the session is doing.
+A notification you cannot swipe away, a chip on the watch face, and a page listing every device
+reading you.
+
+WHAT IT IS FOR
+
+* Cardio machines that read a heart rate belt over Bluetooth, where a chest strap is one more thing
+  to put on and forget to bring.
+* Bike computers that show heart rate, without a second sensor on your chest.
+* Anything else that speaks the standard Bluetooth heart rate profile.
+
+WHAT IT DOES NOT DO
+
+* No account, no sign-in, no history, no cloud.
+* No phone app and no phone needed. The watch is the sensor, so it works on its own.
+* No network access at all. The only thing that leaves the watch is the heart rate, over Bluetooth,
+  to devices you have paired with it.
+
+BATTERY
+
+Broadcasting runs in a foreground service, so it keeps going with the screen off and the watch at
+your side. Readings are sent as they arrive, and the notification is redrawn only a few times a
+minute rather than on every beat.
+
+WEAR OS
+
+Built for Wear OS 3 and later, for round screens, with the bezel and the back gesture both wired to
+what the app does. It asks for Bluetooth and heart rate permissions on the first press, and for
+notifications so it can show you the session is still running. Refusing notifications costs you the
+on-screen reminder and nothing else.
+
+A watch with an optical heart rate sensor is all it needs, and that is every Wear OS watch worth
+wearing to the gym.
