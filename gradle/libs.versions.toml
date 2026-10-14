@@ -15,6 +15,10 @@ robolectric = "4.17"
 # KSP versions itself independently of Kotlin since 2.3, so this is not a Kotlin version prefix.
 ksp = "2.3.12"
 appfunctions = "1.0.0-alpha13"
+# Coverage and analysis, applying the same versions immich-wear uses so both projects report
+# through the same toolchain.
+kover = "0.9.9"
+sonarqube = "7.5.0.8588"
 
 [libraries]
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
@@ -51,3 +55,5 @@ compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-mani
 android-application = { id = "com.android.application", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }

@@ -1,0 +1,82 @@
+name: SonarQube
+
+# The skeleton of SonarCloud analysis: there is no SONAR_TOKEN until the repository is public and the
+# project is enabled on sonarcloud.io, and a job cannot be conditional on a secret, so the first step
+# asks about the token and either analyses or says what is missing. Until then every run is green,
+# which is what makes this safe to leave on.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "fastlane/**"
+      - ".github/**"
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Build and analyze
+    # Pinned rather than ubuntu-latest, which migrates to Ubuntu 26 from 19 October 2026 and would
+    # change the toolchain under a workflow nobody edited.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Is there a SonarCloud token?
+        id: sonar
+        env:
+          TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Without one, say what is missing
+        if: steps.sonar.outputs.configured == 'false'
+        run: |
+          echo "::notice title=Analysis skipped::No SONAR_TOKEN secret, so nothing was sent to SonarCloud. Enabled by adding the token when the repository goes public."
+
+      - name: Check out
+        if: steps.sonar.outputs.configured == 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          # Shallow clones disable blame-based issue attribution.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        if: steps.sonar.outputs.configured == 'true'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        if: steps.sonar.outputs.configured == 'true'
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c79a3e # v4.4.3
+
+      - name: Cache the SonarCloud scanner
+        if: steps.sonar.outputs.configured == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build and analyze
+        if: steps.sonar.outputs.configured == 'true'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./gradlew :wear:testDebugUnitTest :wear:koverXmlReportDebug sonar

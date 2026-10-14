@@ -6,6 +6,7 @@ plugins {
   // errors on a duplicate `kotlin` extension (version pinned in the root buildscript classpath).
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.ksp)
+  alias(libs.plugins.kover)
 }
 
 android {

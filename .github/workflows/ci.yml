@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Check out
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09d # v5.1.0
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           # Nothing here writes to the repository, so no later step needs the token left behind.
           persist-credentials: false
@@ -55,6 +55,43 @@ jobs:
 
       # compileSdk is 37, which a runner image may not have installed yet. AGP fetches a missing
       # platform itself and the images pre-accept the licences for it, so a bump costs a slow run
-      # rather than a broken one.
+      # rather than a broken one. koverXmlReportDebug depends on the tests, so keeping it in this
+      # one invocation is what keeps the suite to a single run.
       - name: Test, lint and build
-        run: ./gradlew :wear:testDebugUnitTest :wear:lintDebug :wear:assembleRelease :wear:bundleRelease
+        run: ./gradlew :wear:testDebugUnitTest :wear:koverXmlReportDebug :wear:lintDebug :wear:assembleRelease :wear:bundleRelease
+
+      # A job cannot be conditional on a secret, so the first step asks about the token and the rest
+      # read the answer. There is no token until the repository is public and coverage is enabled on
+      # Codecov, so the job is green while it is not configured.
+      - name: Is there a Codecov token?
+        id: codecov
+        env:
+          TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Without one, say what is missing
+        if: steps.codecov.outputs.configured == 'false'
+        run: |
+          echo "::notice title=Coverage not uploaded::No CODECOV_TOKEN secret, so the coverage report stayed on the runner. Enabled by adding the token when the repository goes public."
+
+      # A reporting side channel rather than a gate: codecov.io has full outages, which must not
+      # block an otherwise-green push. The tests themselves already failed the job above.
+      - name: Upload coverage to Codecov
+        if: steps.codecov.outputs.configured == 'true'
+        uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1 # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: wear/build/reports/kover/reportDebug.xml
+          fail_ci_if_error: false
+
+      - name: Upload test results to Codecov
+        if: steps.codecov.outputs.configured == 'true' && !cancelled()
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: wear/build/test-results/testDebugUnitTest/*.xml

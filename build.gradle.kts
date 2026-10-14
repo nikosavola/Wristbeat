@@ -12,4 +12,21 @@ plugins {
   // kotlin.android is deliberately absent: AGP 9 provides built-in Kotlin, and applying it on top
   // errors on a duplicate `kotlin` extension.
   alias(libs.plugins.compose.compiler) apply false
+  alias(libs.plugins.kover) apply false
+  // Applied at the root only, so one `sonar` run analyses the whole build from the repository root.
+  alias(libs.plugins.sonarqube)
+}
+
+sonar {
+  properties {
+    property("sonar.projectKey", "nikosavola_Wristbeat")
+    property("sonar.organization", "nikosavola")
+    // SonarCloud reads coverage from Kover's XML report, the same one Codecov gets. Absolute,
+    // because a root-relative literal here resolves against the module directory and is never
+    // found, which shows up as a flat 0%.
+    property(
+      "sonar.coverage.jacoco.xmlReportPaths",
+      file("wear/build/reports/kover/reportDebug.xml").absolutePath,
+    )
+  }
 }
