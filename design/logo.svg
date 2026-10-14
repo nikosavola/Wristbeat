@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <g id="icon">
+    <!-- Brand-red square backdrop -->
+    <rect width="512" height="512" fill="#B3261E"/>
+
+    <!-- White heart as the dial surface. Scaled from the 24x24 app heart,
+         area centroid lands near (256, 248) so the mass reads centered. -->
+    <path transform="translate(28 48) scale(19)" fill="#FFFFFF"
+      d="M12,21.35l-1.45,-1.32C5.4,15.36 2,12.28 2,8.5 2,5.42 4.42,3 7.5,3c1.74,0 3.41,0.81 4.5,2.09C13.09,3.81 14.76,3 16.5,3 19.58,3 22,5.42 22,8.5c0,3.78 -3.4,6.86 -8.55,11.54L12,21.35z"/>
+
+    <!-- Knocked-out dial ring, nudged 6px below the centroid so the top
+         tick clears the notch between the heart lobes -->
+    <circle cx="256" cy="262" r="95" fill="none" stroke="#B3261E" stroke-width="16"/>
+
+    <!-- Four chunky ticks at 12, 3, 6 and 9 -->
+    <g fill="#B3261E">
+      <rect x="241" y="154" width="30" height="26"/>
+      <rect x="241" y="344" width="30" height="26"/>
+      <rect x="148" y="247" width="26" height="30"/>
+      <rect x="338" y="247" width="26" height="30"/>
+    </g>
+
+    <!-- ECG sweep: flat-line, blip, flat-line across the dial center -->
+    <polyline points="188,262 230,262 240,276 256,202 272,280 282,262 324,262"
+      fill="none" stroke="#B3261E" stroke-width="18"
+      stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
