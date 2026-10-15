@@ -42,7 +42,9 @@ class BroadcastPagerTest {
           heartRateBpm = 68,
           connectedDevices = devices,
           rejection = null,
+          activeMode = false,
           onToggle = {},
+          onActiveModeChange = {},
         )
       }
     }

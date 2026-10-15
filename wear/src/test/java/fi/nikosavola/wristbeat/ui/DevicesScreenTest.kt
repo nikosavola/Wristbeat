@@ -2,11 +2,14 @@ package fi.nikosavola.wristbeat.ui
 
 import android.os.SystemClock
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import fi.nikosavola.wristbeat.ble.ConnectedDevice
 import fi.nikosavola.wristbeat.ui.theme.WristbeatTheme
@@ -23,8 +26,23 @@ class DevicesScreenTest {
 
   @get:Rule val rule = createComposeRule()
 
-  private fun screen(devices: List<ConnectedDevice>) {
-    rule.setContent { WristbeatTheme { DevicesScreen(devices = devices) } }
+  /** What the toggle was last asked to become. */
+  private val activeModeChanges = mutableListOf<Boolean>()
+
+  private fun screen(
+    devices: List<ConnectedDevice>,
+    activeMode: Boolean = false,
+    onActiveModeChange: (Boolean) -> Unit = { activeModeChanges += it },
+  ) {
+    rule.setContent {
+      WristbeatTheme {
+        DevicesScreen(
+          devices = devices,
+          activeMode = activeMode,
+          onActiveModeChange = onActiveModeChange,
+        )
+      }
+    }
   }
 
   private fun connected(millisAgo: Long, name: String? = null, address: String = ADDRESS) =
@@ -92,8 +110,38 @@ class DevicesScreenTest {
     rule.onNodeWithText("Bike computer").assertIsDisplayed()
   }
 
+  @Test
+  fun `the active mode switch is on the page, and off until it is asked for`() {
+    screen(emptyList())
+    rule.onNodeWithContentDescription(ACTIVE_MODE_DESCRIPTION).assertIsDisplayed().assertIsOff()
+  }
+
+  @Test
+  fun `a switch that is on says so`() {
+    screen(listOf(connected(millisAgo = 0, name = "Laptop")), activeMode = true)
+    rule.onNodeWithContentDescription(ACTIVE_MODE_DESCRIPTION).assertIsOn()
+  }
+
+  @Test
+  fun `pressing the switch asks for the state it is not in`() {
+    screen(listOf(connected(millisAgo = 0, name = "Laptop")), activeMode = false)
+    rule.onNodeWithContentDescription(ACTIVE_MODE_DESCRIPTION).performClick()
+    assertEquals(listOf(true), activeModeChanges)
+  }
+
+  @Test
+  fun `pressing the switch while it is on asks for it to go off`() {
+    screen(listOf(connected(millisAgo = 0, name = "Laptop")), activeMode = true)
+    rule.onNodeWithContentDescription(ACTIVE_MODE_DESCRIPTION).performClick()
+    assertEquals(listOf(false), activeModeChanges)
+  }
+
   private companion object {
     const val ADDRESS = "AA:AA:AA:AA:AA:AA"
+
+    /** What a screen reader says about the session's one setting. */
+    const val ACTIVE_MODE_DESCRIPTION =
+      "Keep the watch awake. Uses more battery, and keeps the heart rate going while the screen is off."
 
     /** The empty page's rune says what the page is and what to do about it, in one sentence. */
     const val EMPTY_PAGE_DESCRIPTION =

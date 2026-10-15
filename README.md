@@ -44,6 +44,9 @@ how long ago it connected.
   state the button could not reach. The API is still alpha, so no shipping assistant can call it yet.
 - A session is cheap to leave running: balanced advertising, a notification paced to once per five
   seconds, no wakelock, and the sensor asked for its slowest rate.
+- A watch left to idle reports less often once its screen goes off. A bolt on the receivers page
+  keeps it awake for the whole session instead, and is the one thing here that costs battery on
+  purpose.
 
 ## From the wrist
 

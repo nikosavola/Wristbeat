@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.pager.rememberPagerState
+import fi.nikosavola.wristbeat.ActiveMode
 import fi.nikosavola.wristbeat.HeartRateBroadcastService
 import fi.nikosavola.wristbeat.ble.BroadcastPermissions
 import fi.nikosavola.wristbeat.ble.BroadcastRejection
@@ -34,6 +35,7 @@ fun BroadcastRoute(modifier: Modifier = Modifier) {
   val heartRateBpm by BroadcastStatus.heartRateBpm.collectAsStateWithLifecycle()
   val connectedDevices by BroadcastStatus.connectedDevices.collectAsStateWithLifecycle()
   val rejection by BroadcastStatus.rejection.collectAsStateWithLifecycle()
+  val activeMode by ActiveMode.enabled.collectAsStateWithLifecycle()
 
   val permissionLauncher =
     rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -87,7 +89,11 @@ fun BroadcastRoute(modifier: Modifier = Modifier) {
     heartRateBpm = heartRateBpm,
     connectedDevices = connectedDevices,
     rejection = rejection,
+    activeMode = activeMode,
     onToggle = toggle,
+    // Stored before the service is told anything: the service reads the store when a session
+    // starts and follows it while one runs, so there is nothing to push at it either way.
+    onActiveModeChange = { ActiveMode.set(context, it) },
     modifier = modifier,
   )
 }

@@ -19,8 +19,11 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -29,6 +32,7 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.IconToggleButton
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
@@ -40,6 +44,7 @@ import kotlinx.coroutines.delay
 private val HEADER_ICON_SIZE = 20.dp
 private val META_ICON_SIZE = 14.dp
 private val EMPTY_ICON_SIZE = 32.dp
+private val TOGGLE_ICON_SIZE = 24.dp
 private val ICON_GAP = 4.dp
 private val ITEM_VERTICAL_PADDING = 4.dp
 private val ITEM_HORIZONTAL_PADDING = 8.dp
@@ -49,14 +54,24 @@ private val LINE_GAP = 2.dp
 private const val TICK_MILLIS = 1_000L
 
 /**
- * Who is reading the broadcast. The swipe target of the session page, so it is deliberately
- * read-only: nothing here changes what the watch is doing.
+ * Who is reading the broadcast, and the one setting a session has.
  *
  * A row is a name, the age of the connection and an address, with no words between them: the clock
  * glyph and the platform's own relative time say what the second line is.
+ *
+ * The bolt under the list is the session's only choice: keeping the watch awake costs battery and
+ * buys a steady rate with the screen off, which is why it is a switch rather than something the app
+ * decides for the wearer. It sits here rather than on the session page because it is about how the
+ * broadcast is delivered to the receivers listed above it, and it is unchanged by whether there are
+ * any.
  */
 @Composable
-fun DevicesScreen(devices: List<ConnectedDevice>, modifier: Modifier = Modifier) {
+fun DevicesScreen(
+  devices: List<ConnectedDevice>,
+  activeMode: Boolean,
+  onActiveModeChange: (Boolean) -> Unit,
+  modifier: Modifier = Modifier,
+) {
   val columnState = rememberTransformingLazyColumnState()
   // Nothing to age when nobody is connected, so the clock does not run for an empty page.
   val ageClock = rememberAgeClock(ticking = devices.isNotEmpty())
@@ -90,7 +105,45 @@ fun DevicesScreen(devices: List<ConnectedDevice>, modifier: Modifier = Modifier)
         // never repeats.
         items(devices, key = { it.address }) { device -> DeviceRow(device, ageClock) }
       }
+      // On the page whether or not anyone is reading: it is how the session is run, not something
+      // about who is listening to it right now.
+      item {
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          ActiveModeToggle(checked = activeMode, onCheckedChange = onActiveModeChange)
+        }
+      }
     }
+  }
+}
+
+/**
+ * The session's one setting. A bolt that lights up when it is on, because a switch needs no word to
+ * be read and the app has none to spare; what it costs is in the description, where a wearer who
+ * cannot see the colour has it too.
+ */
+@Composable
+private fun ActiveModeToggle(
+  checked: Boolean,
+  onCheckedChange: (Boolean) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val description = stringResource(R.string.active_mode_description)
+  val haptics = LocalHapticFeedback.current
+  IconToggleButton(
+    checked = checked,
+    onCheckedChange = {
+      // The state it is leaving, so the wrist feels which way it went, as the play button does.
+      haptics.toggleHaptic(checked)
+      onCheckedChange(!checked)
+    },
+    modifier = modifier.semantics { contentDescription = description },
+  ) {
+    Icon(
+      painter = painterResource(R.drawable.ic_bolt),
+      // The button above is named and says whether it is on, so this is decoration.
+      contentDescription = null,
+      modifier = Modifier.size(TOGGLE_ICON_SIZE),
+    )
   }
 }
 

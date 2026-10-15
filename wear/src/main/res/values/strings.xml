@@ -26,6 +26,11 @@
        app, but a screen reader still has to be told what to do next. -->
   <string name="devices_empty_description">Connected devices. No receiver has connected yet. Pair this watch as a heart rate sensor from the device you want to read it.</string>
 
+  <!-- The only setting the app has, and the only control on the devices page. It draws as a bolt
+       that lights up, so the words here are what a screen reader says about it, including what the
+       choice costs. -->
+  <string name="active_mode_description">Keep the watch awake. Uses more battery, and keeps the heart rate going while the screen is off.</string>
+
   <string name="rejection_bluetooth_off">Turn Bluetooth on</string>
   <string name="rejection_peripheral_unavailable">This watch can\'t broadcast</string>
   <string name="rejection_advertise_failed">Couldn\'t start broadcasting</string>

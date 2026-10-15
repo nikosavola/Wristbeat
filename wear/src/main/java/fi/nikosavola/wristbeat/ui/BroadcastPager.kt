@@ -38,7 +38,9 @@ fun BroadcastPager(
   heartRateBpm: Int?,
   connectedDevices: List<ConnectedDevice>,
   rejection: BroadcastRejection?,
+  activeMode: Boolean,
   onToggle: () -> Unit,
+  onActiveModeChange: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val scope = rememberCoroutineScope()
@@ -72,7 +74,12 @@ fun BroadcastPager(
       ) { page ->
         AnimatedPage(pageIndex = page, pagerState = pagerState) {
           when (page) {
-            DEVICES_PAGE -> DevicesScreen(devices = connectedDevices)
+            DEVICES_PAGE ->
+              DevicesScreen(
+                devices = connectedDevices,
+                activeMode = activeMode,
+                onActiveModeChange = onActiveModeChange,
+              )
             else ->
               BroadcastScreen(
                 broadcasting = broadcasting,
