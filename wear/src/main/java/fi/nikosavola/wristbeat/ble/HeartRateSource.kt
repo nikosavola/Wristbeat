@@ -14,11 +14,19 @@ import android.hardware.SensorManager
  */
 class HeartRateSource(
   context: Context,
+  /**
+   * Asks for the wake-up variant of the sensor, which can rouse the processor to deliver a reading.
+   * Only worth it while something else is keeping the watch awake anyway; not every watch has one,
+   * so this falls back to the ordinary sensor rather than finding nothing to read.
+   */
+  wakeUp: Boolean = false,
   private val onHeartRate: (Int) -> Unit,
 ) : SensorEventListener {
   private val sensorManager: SensorManager? =
     context.applicationContext.getSystemService(SensorManager::class.java)
-  private val sensor: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+  private val sensor: Sensor? =
+    sensorManager?.getDefaultSensor(Sensor.TYPE_HEART_RATE, wakeUp)
+      ?: sensorManager?.getDefaultSensor(Sensor.TYPE_HEART_RATE)
 
   val isAvailable: Boolean
     get() = sensor != null

@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
+import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
@@ -35,6 +36,9 @@ private const val NOTIFICATION_ID = 1
 private const val ACTION_START = "fi.nikosavola.wristbeat.action.START"
 private const val ACTION_STOP = "fi.nikosavola.wristbeat.action.STOP"
 
+/** Names the wake lock in the battery stats, so a drained watch can be traced back to this. */
+private const val WAKE_LOCK_TAG = "wristbeat:broadcast"
+
 /**
  * Keeps the watch advertising as a heart rate sensor with the screen off, which is the only state
  * this app is useful in. A foreground service with the connectedDevice type is what the platform
@@ -50,6 +54,12 @@ class HeartRateBroadcastService : Service() {
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
   private var notificationUpdates: Job? = null
+
+  /** Follows the wearer's choice for as long as the session runs, so flipping it needs no restart. */
+  private var activeModeUpdates: Job? = null
+
+  /** Held only while active mode is on, and only for as long as the session that asked for it. */
+  private var wakeLock: PowerManager.WakeLock? = null
 
   override fun onBind(intent: Intent?): IBinder? = null
 
@@ -74,6 +84,7 @@ class HeartRateBroadcastService : Service() {
     // Nothing from the previous attempt describes this one, so it is cleared before the gates below
     // can set a new reason.
     BroadcastStatus.attempting()
+    ActiveMode.load(this)
 
     // The activity and the app function both gate on these, so reaching this means a caller skipped
     // that. Bailed out before startForeground because the connectedDevice type would refuse to start
@@ -89,10 +100,17 @@ class HeartRateBroadcastService : Service() {
     startForegroundCompat()
 
     val sensor =
-      HeartRateSource(this) { bpm ->
-        BroadcastStatus.heartRateChanged(bpm)
-        peripheral?.send(bpm)
-      }
+      HeartRateSource(
+        context = this,
+        onHeartRate = { bpm ->
+          BroadcastStatus.heartRateChanged(bpm)
+          peripheral?.send(bpm)
+        },
+        // Decided when the listener starts. A choice made later in the session still gets its
+        // readings through, because the wakelock it takes keeps the processor up for the sensor
+        // that is already registered.
+        wakeUp = ActiveMode.enabled.value,
+      )
     if (!sensor.isAvailable) {
       BroadcastStatus.rejected(BroadcastRejection.NoHeartRateSensor)
       stopSelf()
@@ -132,11 +150,15 @@ class HeartRateBroadcastService : Service() {
     }
     BroadcastStatus.started()
     startNotificationUpdates()
+    startActiveModeUpdates()
   }
 
   private fun stopBroadcasting() {
     notificationUpdates?.cancel()
     notificationUpdates = null
+    activeModeUpdates?.cancel()
+    activeModeUpdates = null
+    releaseWakeLock()
     source?.stop()
     source = null
     peripheral?.stop()
@@ -185,6 +207,46 @@ class HeartRateBroadcastService : Service() {
   }
 
   private data class NotificationState(val bpm: Int?, val receivers: Int)
+
+  /**
+   * Follows the wearer's choice for the length of the session, so the switch on the devices page
+   * takes effect on the watch rather than on the next one. A session is meant to be left running,
+   * and deciding partway through that the pulse matters more than the battery is the ordinary case.
+   */
+  private fun startActiveModeUpdates() {
+    activeModeUpdates =
+      scope.launch {
+        ActiveMode.enabled.collect { active ->
+          if (active) acquireWakeLock() else releaseWakeLock()
+        }
+      }
+  }
+
+  /**
+   * Keeps the processor awake without touching the screen, which is the state a receiver wants and
+   * the one a watch is not in by default once the wearer stops looking at it.
+   *
+   * No timeout: the session's own end releases this, the service is what the wearer turned on, and a
+   * lock that quietly expired mid-session would be exactly the slowdown this exists to prevent. It
+   * cannot outlive the process if the platform kills the service outright.
+   */
+  @SuppressLint("WakelockTimeout")
+  private fun acquireWakeLock() {
+    if (wakeLock?.isHeld == true) return
+    val power = getSystemService(PowerManager::class.java) ?: return
+    wakeLock =
+      power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+        // Released exactly once, by [releaseWakeLock]: reference counting would leave a stray
+        // acquire behind for every restart of the setting.
+        setReferenceCounted(false)
+        acquire()
+      }
+  }
+
+  private fun releaseWakeLock() {
+    wakeLock?.takeIf { it.isHeld }?.release()
+    wakeLock = null
+  }
 
   private fun startForegroundCompat() {
     createNotificationChannel()

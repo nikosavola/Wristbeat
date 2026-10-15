@@ -24,7 +24,8 @@ class HeartRateSourceTest {
 
   private val readings = mutableListOf<Int>()
 
-  private fun source() = HeartRateSource(context) { readings += it }
+  private fun source(wakeUp: Boolean = false) =
+    HeartRateSource(context, wakeUp = wakeUp) { readings += it }
 
   @Test
   fun `a watch with no heart rate sensor says so, and cannot be started`() {
@@ -42,6 +43,18 @@ class HeartRateSourceTest {
     assertTrue(shadowOf(manager).hasListener(source))
     source.stop()
     assertFalse(shadowOf(manager).hasListener(source))
+  }
+
+  @Test
+  fun `asking for the wake-up sensor still reads a watch that has only the ordinary one`() {
+    // Most watches expose no wake-up flavour of the heart rate sensor. Asking for one must not turn
+    // a watch that can broadcast into one that cannot.
+    val sensor = addHeartRateSensor()
+    val source = source(wakeUp = true)
+    assertTrue(source.isAvailable)
+    assertTrue(source.start())
+    deliver(sensor, bpm = 79)
+    assertEquals(listOf(79), readings)
   }
 
   @Test

@@ -28,6 +28,7 @@ import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
 import org.robolectric.shadows.SensorEventBuilder
+import org.robolectric.shadows.ShadowPowerManager
 import org.robolectric.shadows.ShadowSensor
 import org.robolectric.shadows.ShadowService
 import java.time.Duration
@@ -65,6 +66,9 @@ class HeartRateBroadcastServiceTest {
     BroadcastStatus.stopped()
     shadowOf(application).grantPermissions(*BroadcastPermissions.required.toTypedArray())
     setBluetoothEnabled(false)
+    // Both of these outlive a test: the setting is process-wide and a wake lock is the platform's.
+    ActiveMode.set(context, false)
+    ShadowPowerManager.clearWakeLocks()
   }
 
   @Test
@@ -240,6 +244,38 @@ class HeartRateBroadcastServiceTest {
     controller.destroy()
   }
 
+  // --- active mode -------------------------------------------------------------------------------
+
+  @Test
+  fun `a session leaves the watch to idle unless the wearer asked otherwise`() {
+    val controller = runningSession()
+    assertFalse("a session took a wake lock nobody asked for", wakeLockHeld())
+    controller.destroy()
+  }
+
+  @Test
+  fun `active mode holds the watch awake for the session and lets go at the end`() {
+    ActiveMode.set(context, true)
+    val controller = runningSession()
+    assertTrue("active mode did not take a wake lock", wakeLockHeld())
+    controller.destroy()
+    assertFalse("the session kept the watch awake after it stopped", wakeLockHeld())
+  }
+
+  @Test
+  fun `active mode can be turned on partway through a session`() {
+    // The reason it is observed rather than read once: a session is left running for hours, and the
+    // wearer may only notice the receiver lagging once it is under way.
+    val controller = runningSession()
+    ActiveMode.set(context, true)
+    settle()
+    assertTrue("turning it on did nothing to the running session", wakeLockHeld())
+    ActiveMode.set(context, false)
+    settle()
+    assertFalse("turning it off left the watch awake", wakeLockHeld())
+    controller.destroy()
+  }
+
   @Test
   fun `stopping a running session clears the reading and says it is not broadcasting`() {
     val controller = runningSession()
@@ -314,6 +350,9 @@ class HeartRateBroadcastServiceTest {
       .getNotification(NOTIFICATION_ID)
       ?.extras
       ?.getString(Notification.EXTRA_TEXT)
+
+  /** Whether anything is holding the processor awake, whichever session asked for it. */
+  private fun wakeLockHeld(): Boolean = ShadowPowerManager.getLatestWakeLock()?.isHeld == true
 
   private fun setBluetoothEnabled(enabled: Boolean) {
     shadowOf(adapter()).setEnabled(enabled)
