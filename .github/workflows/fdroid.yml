@@ -1,0 +1,137 @@
+name: F-Droid metadata check
+# Informational only, not a merge gate (continue-on-error below): this exercises fdroidserver's own
+# lint/scanner logic plus fdroiddata's own reference data, both of which can change upstream
+# independently of anything in this repo. fdroiddata's own merge-request pipeline re-validates
+# everything for real at submission time.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  fdroid-check:
+    name: fdroid lint + scanner
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          # Full history: this checkout doubles as the local Repo the scanner step clones from.
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.x'
+      - name: Install fdroidserver
+        # Pinned, not --only-binary :all:: fdroidserver ships no wheel on PyPI, so building the sdist
+        # is unavoidable here rather than a choice.
+        run: pip install --quiet fdroidserver==2.4.5
+      - name: Check metadata versions match wear/build.gradle.kts
+        # Neither fdroid lint nor fdroid scanner cross-checks these against the Gradle config, so a
+        # release bump with no matching metadata update would go unnoticed by both and stay unnoticed,
+        # since this job would keep passing. Takes the highest-versionCode Builds entry rather than the
+        # only one, so it keeps working once the metadata accumulates build history, and checks
+        # CurrentVersion/CurrentVersionCode too.
+        run: |
+          python3 -c "
+          import re, sys, yaml
+
+          with open('wear/build.gradle.kts') as f:
+              gradle = f.read()
+          gradle_name = re.search(r'versionName = \"([^\"]+)\"', gradle).group(1)
+          # Kotlin digit separators: 36_000_01_00 is 360000100.
+          gradle_code = int(re.search(r'versionCode = ([\d_]+)', gradle).group(1).replace('_', ''))
+
+          with open('metadata/fi.nikosavola.wristbeat.yml') as f:
+              meta = yaml.safe_load(f)
+          latest_build = max(meta['Builds'], key=lambda b: b['versionCode'])
+
+          problems = []
+          for label, actual in (
+              ('CurrentVersion', meta.get('CurrentVersion')),
+              ('latest Builds versionName', latest_build.get('versionName')),
+          ):
+              if actual != gradle_name:
+                  problems.append(f'{label} is {actual!r}, wear/build.gradle.kts has {gradle_name!r}')
+          for label, actual in (
+              ('CurrentVersionCode', meta.get('CurrentVersionCode')),
+              ('latest Builds versionCode', latest_build.get('versionCode')),
+          ):
+              if actual != gradle_code:
+                  problems.append(f'{label} is {actual!r}, wear/build.gradle.kts has {gradle_code!r}')
+
+          for p in problems:
+              print(f'::error::{p} - update metadata/fi.nikosavola.wristbeat.yml')
+          sys.exit(1 if problems else 0)
+          "
+      - name: Fetch F-Droid's categories/anti-features reference data
+        # fdroid lint validates Categories and AntiFeatures against files that live in fdroiddata, not
+        # in the fdroidserver package - sparse and shallow, just config/ (~20MB), not the metadata
+        # history.
+        run: |
+          git clone --quiet --depth 1 --filter=blob:none --sparse \
+            https://gitlab.com/fdroid/fdroiddata.git "$RUNNER_TEMP/fdroiddata-config"
+          git -C "$RUNNER_TEMP/fdroiddata-config" sparse-checkout set config
+      - name: Prepare a scratch fdroiddata-shaped check directory
+        # fdroid lint and fdroid scanner want metadata/<appid>.yml and config/ relative to the working
+        # directory, not a path you can point them at. Repo: is pointed at this exact checkout so the
+        # scanner clones locally and tests the commit under test rather than whatever the remote
+        # resolves to at scan time. The greps fail loudly if either placeholder stops matching, instead
+        # of the sed silently emitting the unchanged line and testing something else.
+        run: |
+          mkdir -p "$RUNNER_TEMP/fdroid-check/metadata"
+          cp -r "$RUNNER_TEMP/fdroiddata-config/config" "$RUNNER_TEMP/fdroid-check/config"
+          grep -q 'commit: __CI_COMMIT_SHA__' metadata/fi.nikosavola.wristbeat.yml
+          grep -q 'Repo: https://github.com/nikosavola/Wristbeat' metadata/fi.nikosavola.wristbeat.yml
+          sed -e "s|commit: __CI_COMMIT_SHA__|commit: $GITHUB_SHA|" \
+              -e "s|Repo: https://github.com/nikosavola/Wristbeat|Repo: $GITHUB_WORKSPACE|" \
+              metadata/fi.nikosavola.wristbeat.yml \
+              > "$RUNNER_TEMP/fdroid-check/metadata/fi.nikosavola.wristbeat.yml"
+      - name: fdroid lint
+        working-directory: ${{ runner.temp }}/fdroid-check
+        run: fdroid lint fi.nikosavola.wristbeat -v
+      - name: fdroid rewritemeta --list (informational)
+        # -l, not --format: the tracked file deliberately keeps comments and readable field order, which
+        # fdroiddata's byte-exact format check would flag. This only surfaces what reformatting the
+        # upstream copy needs.
+        working-directory: ${{ runner.temp }}/fdroid-check
+        run: fdroid rewritemeta -l fi.nikosavola.wristbeat || true
+      - name: fdroid scanner
+        working-directory: ${{ runner.temp }}/fdroid-check
+        # --exit-code is a no-op for appid-based scans: fdroidserver only wires it up for literal .apk
+        # arguments, so the process exits 0 whatever it finds and failure detection has to come from the
+        # JSON below. infos (the gradlew/wrapper removals are expected) are not failures.
+        #
+        # A VCS or build exception during the scan is only logged to stderr and never reaches the JSON,
+        # so without the stderr grep a failed checkout would look like a clean scan. An appid is also
+        # only present in the JSON when there is something to report, so a fully clean scan is legitimately
+        # {}, and an unused scanignore/scandelete path is likewise invisible to the JSON.
+        run: |
+          fdroid scanner fi.nikosavola.wristbeat -v --json \
+            > scanner-output.json 2> scanner-stderr.log
+          cat scanner-stderr.log
+          if grep -qE 'Could not scan app|VCS error while scanning app|Unused scanignore path|Unused scandelete path' scanner-stderr.log; then
+            echo "::error::fdroid scanner failed to complete a scan - see stderr above"
+            exit 1
+          fi
+          python3 -c "
+          import json, sys
+          with open('scanner-output.json') as f:
+              data = json.load(f)
+          problems = 0
+          for appid, builds in data.items():
+              for vercode, result in builds.items():
+                  for level in ('errors', 'warnings'):
+                      for msg, path in result.get(level, []):
+                          print(f'{level}: {msg} at {path}')
+                          problems += 1
+          sys.exit(1 if problems else 0)
+          "

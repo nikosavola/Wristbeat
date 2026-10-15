@@ -1,0 +1,46 @@
+# F-Droid build recipe for the single :wear module.
+#
+# This is the CI-testing copy, not the literal content for the fdroiddata merge request: `commit` is
+# a placeholder .github/workflows/fdroid.yml substitutes with the commit under test, and the version
+# fields track this repo rather than a tagged release. The copy that goes upstream is
+# `fdroid rewritemeta`'s output from this file, which drops these comments. fdroiddata's own CI
+# re-validates everything at submission time.
+Categories:
+  - Sports & Health
+License: Apache-2.0
+# No anti-features: no network access at all. The app talks to the watch's own sensor and to
+# Bluetooth receivers over GATT, nothing else, and it ships no Google Play Services.
+AuthorName: Niko Savola
+SourceCode: https://github.com/nikosavola/Wristbeat
+IssueTracker: https://github.com/nikosavola/Wristbeat/issues
+Changelog: https://github.com/nikosavola/Wristbeat/releases
+Liberapay: nikosavola
+
+# The manifest's android:label. Summary and description come from the app's own
+# fastlane/metadata/android/ tree, which F-Droid reads in place of the metadata fields.
+AutoName: Wristbeat
+
+RepoType: git
+Repo: https://github.com/nikosavola/Wristbeat
+
+Builds:
+  - versionName: '0.1.0'
+    versionCode: 360000100
+    commit: __CI_COMMIT_SHA__
+    subdir: wear
+    # No flavors, so plain Gradle. A clone without key.properties leaves release unsigned, which is
+    # what F-Droid signs with its own key (see wear/build.gradle.kts's signingConfigs block). The
+    # APK is found under wear/build/outputs/apk/release/ without an explicit output path.
+    gradle: yes
+
+# No wait needed for the build server to carry the android-37 platform, which the app needs because
+# androidx.appfunctions refuses anything older (see the compileSdk note in wear/build.gradle.kts).
+# Its preinstalled platform list indeed stops at android-33, but that list is a starting point: the
+# SDK directory is left writable with the licences accepted, so AGP downloads platforms and
+# build-tools it is missing at build time. Another compileSdk 37 app has built green on it.
+# The version comes from wear/build.gradle.kts at the tag rather than from the tag name, so a
+# `v0.1.0` tag is right for versionName 0.1.0. Verified with fdroid checkupdates against a local tag.
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.1.0
+CurrentVersionCode: 360000100
