@@ -28,6 +28,9 @@ Broadcasting runs in a foreground service, so it keeps going with the screen off
 your side. Readings are sent as they arrive, and the notification is redrawn only a few times a
 minute rather than on every beat.
 
+A watch left to idle reports less often once its screen goes off. A bolt on the receivers page keeps
+it awake for the whole session instead. That costs battery, and it is off unless you ask for it.
+
 WEAR OS
 
 Built for Wear OS 3 and later, for round screens, with the bezel and the back gesture both wired to

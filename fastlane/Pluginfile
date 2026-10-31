@@ -1,0 +1,3 @@
+# Loaded by fastlane through the Gemfile that pins it. The plugin is the documented route into
+# Galaxy Store's Content Publish API; Play and F-Droid need nothing here.
+gem "fastlane-plugin-galaxystore", "1.0.0"

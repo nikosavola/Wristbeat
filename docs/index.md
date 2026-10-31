@@ -10,8 +10,8 @@ with.
 
 ## Get it
 
-Not published yet. It is being prepared for Google Play and F-Droid, and this page will say when it
-is out. The source is at <https://github.com/nikosavola/Wristbeat>, where the README covers building
+Not published yet. It is being prepared for Google Play, F-Droid and Samsung Galaxy Store, and this
+page will say when it is out. The source is at <https://github.com/nikosavola/Wristbeat>, where the README covers building
 and installing it yourself.
 
 ## Pages

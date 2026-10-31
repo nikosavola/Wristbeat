@@ -1,6 +1,6 @@
 # Wristbeat privacy policy
 
-Effective 12 October 2026.
+Effective 31 October 2026.
 
 Wristbeat is a Wear OS app that makes a watch act as a Bluetooth heart rate sensor. This policy says
 what the app does with information, which is very little.
@@ -13,8 +13,9 @@ broadcast is all the app does with the reading. It reaches only the Bluetooth de
 the watch, which you control by pairing them.
 
 While a session runs, the reading and the number of devices reading it appear on the watch's screen
-and in its notification. Both live in memory until the session stops, and nothing is written to
-storage. There is no history.
+and in its notification. Both live in memory until the session stops, and neither is written to
+storage. There is no history. The one thing the app does store is whether you asked a session to keep
+the watch awake, which stays on the watch and goes nowhere else.
 
 ## What the app does not do
 

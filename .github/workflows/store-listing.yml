@@ -1,0 +1,95 @@
+name: Store listing
+
+# Three stores read one set of listing files, and none of them validates it before an upload day.
+# The checks that need nothing but the repository run here, on anything that feeds them, instead of
+# waiting for a tag to fail.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "fastlane/**"
+      - "wear/build.gradle.kts"
+      - "wear/src/main/AndroidManifest.xml"
+      - ".github/scripts/check-stores.py"
+      - ".github/workflows/store-listing.yml"
+  pull_request:
+    paths:
+      - "fastlane/**"
+      - "wear/build.gradle.kts"
+      - "wear/src/main/AndroidManifest.xml"
+      - ".github/scripts/check-stores.py"
+      - ".github/workflows/store-listing.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  listing:
+    name: Check the store listing
+    # Python only, so no JDK and no Gradle: the whole job is seconds long.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Check the listing
+        run: python3 .github/scripts/check-stores.py
+
+  play-listing:
+    name: Push the listing to Play
+    # Manual only: a listing edit reaches Play when someone decides it should, not on every push.
+    # The app has to exist in Play already, which is the manual first upload.
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Is there a Play service account?
+        id: account
+        env:
+          ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$ACCOUNT" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Without one, say what is missing
+        if: steps.account.outputs.configured == 'false'
+        run: echo "::notice title=Play listing skipped::Add PLAY_SERVICE_ACCOUNT_JSON and run this again to push the listing."
+
+      - name: Check out
+        if: steps.account.outputs.configured == 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        if: steps.account.outputs.configured == 'true'
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Write the service account where supply reads it
+        if: steps.account.outputs.configured == 'true'
+        env:
+          ACCOUNT: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          printf '%s' "$ACCOUNT" > "$RUNNER_TEMP/play-service-account.json"
+          echo "PLAY_SERVICE_ACCOUNT_JSON_PATH=$RUNNER_TEMP/play-service-account.json" >> "$GITHUB_ENV"
+
+      - name: Publish the listing
+        if: steps.account.outputs.configured == 'true'
+        run: bundle exec fastlane android playlisting

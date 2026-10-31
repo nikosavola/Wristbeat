@@ -71,7 +71,8 @@ notification's Stop, to end the session.
 
 ## Get it
 
-Not published yet. It is being prepared for Google Play and F-Droid. Until then, build it:
+Not published yet. It is being prepared for Google Play, F-Droid and Samsung Galaxy Store. Until
+then, build it:
 
 ```sh
 ./gradlew :wear:assembleDebug

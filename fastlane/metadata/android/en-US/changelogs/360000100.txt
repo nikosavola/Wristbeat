@@ -2,4 +2,5 @@ First release.
 
 Press the play button to start broadcasting your heart rate as a standard Bluetooth heart rate
 sensor, and press it again to stop. The badge on the watch face and the notification both say what
-the session is doing, and the second page lists who is reading it.
+the session is doing. The second page lists who is reading it, and holds the one switch: keep the
+watch awake for the whole session, at the cost of the battery that idling would save.

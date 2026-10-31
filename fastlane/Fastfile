@@ -1,0 +1,47 @@
+# Galaxy Store is the only store here that needs a Ruby program: Play is uploaded by an action in
+# the release workflow, and F-Droid builds from source itself.
+#
+# The listing is set up once in Seller Portal by hand and is not touched here; this lane only takes
+# the released APK and asks for review, so a listing edit can never ride along with a release.
+#
+#   SAMSUNG_ACCESS_TOKEN=... SAMSUNG_SERVICE_ACCOUNT_ID=... SAMSUNG_CONTENT_ID=... \
+#     SAMSUNG_APK_PATH=wear/build/outputs/apk/release/wear-release.apk \
+#     bundle exec fastlane android galaxystore
+default_platform(:android)
+
+platform :android do
+  desc "Upload the released APK to Galaxy Store and submit it for review"
+  lane :galaxystore do
+    content_id = ENV.fetch("SAMSUNG_CONTENT_ID")
+    # Passed explicitly rather than through the plugin's own environment variables, so this file
+    # reads the names the release workflow writes and nothing else.
+    auth = {
+      access_token: ENV.fetch("SAMSUNG_ACCESS_TOKEN"),
+      service_account_id: ENV.fetch("SAMSUNG_SERVICE_ACCOUNT_ID"),
+    }
+
+    galaxy_store_upload_apk(
+      **auth,
+      content_id: content_id,
+      apk_path: ENV.fetch("SAMSUNG_APK_PATH"),
+      # No Google Play Services anywhere in this app: it reads the watch's own sensor and talks to
+      # Bluetooth receivers, and ships no Google SDK.
+      gms: "N",
+    )
+    galaxy_store_submit_app(**auth, content_id: content_id)
+  end
+
+  desc "Push the listing text, graphics and screenshots to Play, without a release"
+  lane :playlisting do
+    # The listing and the binary move on different schedules: a description can change without a
+    # version, and the release workflow is what publishes a binary.
+    supply(
+      json_key: ENV.fetch("PLAY_SERVICE_ACCOUNT_JSON_PATH"),
+      package_name: "fi.nikosavola.wristbeat",
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      # The Play app has to exist already: there is no API that creates one, so the first release is
+      # uploaded from the console by hand.
+    )
+  end
+end

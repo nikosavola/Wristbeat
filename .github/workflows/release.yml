@@ -57,6 +57,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         run: .github/scripts/check-release.sh "$GITHUB_REF_NAME" | tee -a "$GITHUB_OUTPUT"
 
+      # Every store reads the same listing, and a title one character long or a screenshot at the
+      # wrong size is refused at upload rather than here. A manual run checks it too.
+      - name: Check what the stores will read
+        run: python3 .github/scripts/check-stores.py
+
       # A release without the four secrets is still a release: F-Droid signs the APK it builds itself,
       # so a missing key costs only the Play upload.
       - name: Write the upload key, if there is one
@@ -240,3 +245,80 @@ jobs:
           # through an earlier track.
           tracks: internal
           status: completed
+
+  galaxystore:
+    name: Upload the APK to Galaxy Store
+    needs: [build, release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # The same shape as the Play job: a job cannot test a secret, so a step asks and the rest read
+      # the answer, which keeps a release green while Seller Portal is still being set up.
+      - name: Is there a Galaxy Store service account?
+        id: account
+        env:
+          TOKEN: ${{ secrets.SAMSUNG_ACCESS_TOKEN }}
+          SERVICE_ACCOUNT_ID: ${{ secrets.SAMSUNG_SERVICE_ACCOUNT_ID }}
+          CONTENT_ID: ${{ secrets.SAMSUNG_CONTENT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$SERVICE_ACCOUNT_ID" ] && [ -n "$CONTENT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Without one, say what is missing
+        if: steps.account.outputs.configured == 'false'
+        run: |
+          {
+            echo "### Galaxy Store upload skipped"
+            echo
+            echo "No \`SAMSUNG_ACCESS_TOKEN\`, \`SAMSUNG_SERVICE_ACCOUNT_ID\` and \`SAMSUNG_CONTENT_ID\` secret, so the APK was released and not uploaded."
+            echo
+            echo "The content ID only exists once the app is registered in Seller Portal, which is why the first upload is by hand."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Galaxy Store upload skipped::Add the three SAMSUNG_* secrets and a tag uploads the APK for review."
+
+      - name: Check out
+        if: steps.account.outputs.configured == 'true'
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Ruby
+        if: steps.account.outputs.configured == 'true'
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Take the artifacts
+        if: steps.account.outputs.configured == 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: artifacts
+
+      - name: A signed APK or nothing
+        if: steps.account.outputs.configured == 'true'
+        run: |
+          set -eu
+          # Galaxy Store refuses an unsigned APK, and the build names it that way, so the filename is
+          # the test. The same upload key signs this and the bundle.
+          apk=$(ls artifacts/wear-release*.apk)
+          case $apk in
+            *-unsigned.apk)
+              echo "::error title=Unsigned APK::This release was built without an upload key, so Galaxy Store would refuse it. Add the UPLOAD_* secrets and tag again."
+              exit 1
+              ;;
+          esac
+          echo "SAMSUNG_APK_PATH=$apk" >> "$GITHUB_ENV"
+
+      - name: Upload and submit for review
+        if: steps.account.outputs.configured == 'true'
+        env:
+          SAMSUNG_ACCESS_TOKEN: ${{ secrets.SAMSUNG_ACCESS_TOKEN }}
+          SAMSUNG_SERVICE_ACCOUNT_ID: ${{ secrets.SAMSUNG_SERVICE_ACCOUNT_ID }}
+          SAMSUNG_CONTENT_ID: ${{ secrets.SAMSUNG_CONTENT_ID }}
+        run: bundle exec fastlane android galaxystore

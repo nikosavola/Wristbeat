@@ -57,6 +57,12 @@ jobs:
       # platform itself and the images pre-accept the licences for it, so a bump costs a slow run
       # rather than a broken one. koverXmlReportDebug depends on the tests, so keeping it in this
       # one invocation is what keeps the suite to a single run.
+      #
+      # The listing check runs before the long step: a manifest or version change can break what
+      # the stores read without touching anything under fastlane, which has its own workflow.
+      - name: Check what the stores will read
+        run: python3 .github/scripts/check-stores.py
+
       - name: Test, lint and build
         run: ./gradlew :wear:testDebugUnitTest :wear:koverXmlReportDebug :wear:lintDebug :wear:assembleRelease :wear:bundleRelease
 
