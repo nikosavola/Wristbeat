@@ -108,16 +108,23 @@ jobs:
             echo "::warning title=Unsigned bundle::Play refuses an unsigned bundle. Add the four UPLOAD_* secrets to sign it."
           fi
 
+      # upload-artifact keeps the common parent of its paths, so the three files would come back in
+      # bundle/, apk/ and mapping/ subfolders and the jobs below would not find them.
+      - name: Gather what the build produced
+        run: |
+          set -eu
+          mkdir dist
+          cp wear/build/outputs/bundle/release/wear-release.aab dist/
+          cp wear/build/outputs/apk/release/wear-release*.apk dist/
+          cp wear/build/outputs/mapping/release/mapping.txt dist/
+
       - name: Keep what the build produced
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release
           # The mapping is Play's, for reading a stack trace, and far too big to be a download anyone
           # wants, which is why it is in the artifact and not on the release.
-          path: |
-            wear/build/outputs/bundle/release/wear-release.aab
-            wear/build/outputs/apk/release/wear-release*.apk
-            wear/build/outputs/mapping/release/mapping.txt
+          path: dist/*
           if-no-files-found: error
 
   release:
