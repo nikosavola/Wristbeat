@@ -64,7 +64,7 @@ jobs:
 
       - name: Set up Gradle
         if: steps.sonar.outputs.configured == 'true'
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c79a3e # v4.4.3
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
 
       - name: Cache the SonarCloud scanner
         if: steps.sonar.outputs.configured == 'true'
