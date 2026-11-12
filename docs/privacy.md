@@ -34,7 +34,8 @@ the watch awake, which stays on the watch and goes nowhere else.
 - **Nearby devices** (Bluetooth advertise and connect). Advertises the heart rate service and serves
   readings to devices that connect. Both are required for the app to work.
 - **Heart rate**. Reads the watch's optical heart rate sensor. Required. If refused, the app reports
-  "No heart rate sensor" instead of guessing.
+  "No heart rate sensor" instead of guessing. Wear OS shows this permission on its Health Connect
+  screen, but that is only where the system asks. The app still does not use Health Connect.
 - **Notifications**. Keeps the ongoing notification, which shows on the watch while a session runs.
   Optional. Without it the app still broadcasts, and only the reminder is missing.
 
