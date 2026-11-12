@@ -1,6 +1,6 @@
 # Wristbeat privacy policy
 
-Effective 31 October 2026.
+Effective 18 November 2026.
 
 Wristbeat is a Wear OS app that makes a watch act as a Bluetooth heart rate sensor. This policy says
 what the app does with information, which is very little.
@@ -28,6 +28,21 @@ the watch awake, which stays on the watch and goes nowhere else.
   watch's sensor directly.
 - It does not share information with third parties, because it has none to share.
 - It is not directed at children, and collects nothing from anyone.
+
+## Data retention
+
+The app keeps no personal data. Heart rate readings exist in memory only while a session runs and are
+discarded when it stops. They are never written to storage and never sent anywhere, so there is
+nothing to retain. The only stored value is the keep-awake choice described above, which holds no
+personal information. It stays on the watch until you clear the app's data or uninstall the app.
+
+## Data deletion
+
+Because the developer receives and holds no data about you, there is nothing to request or delete
+from the developer, and there is no deletion request process. Everything the app stores is on your
+watch, and you can remove it yourself at any time. Clear the app's storage in the watch's settings,
+or uninstall the app, and the keep-awake choice is gone. Stopping a session discards the live
+reading right away.
 
 ## Permissions, and why the app asks for them
 
